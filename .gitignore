@@ -4,3 +4,20 @@
 
 /MySpSystem.vcxproj
 /MySpSystem.vcxproj.filters
+build/
+x64/
+Debug/
+Release/
+*.exe
+*.obj
+*.o
+
+# IDE 与编辑器
+.vs/
+.qtcreator/
+.claude/
+*.user
+*.suo
+
+# 运行时生成的数据库文件
+mysp.db
