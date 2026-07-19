@@ -26,6 +26,8 @@ private slots:
     void onSaveBatch();
     // 交接
     void onShiftHandover();
+    // 退出登录
+    void onLogout();
 
 private:
     void setupUI();
@@ -34,6 +36,7 @@ private:
 
     QListWidget* m_navList = nullptr;
     QStackedWidget* m_stack = nullptr;
+    QLabel* m_headerLabel = nullptr;
 
     // 库存录入控件
     QLineEdit* m_productSearch = nullptr;

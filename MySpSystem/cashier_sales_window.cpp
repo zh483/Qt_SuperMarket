@@ -29,8 +29,29 @@ CashierSalesWindow::CashierSalesWindow(QWidget* parent) : QWidget(parent)
 // ────────────────────────────────────────────
 void CashierSalesWindow::setupUI()
 {
-    auto* root = new QHBoxLayout(this);
+    auto* root = new QVBoxLayout(this);
     root->setContentsMargins(0, 0, 0, 0);
+    root->setSpacing(0);
+
+    // 顶部栏
+    auto* topBar = new QHBoxLayout;
+    topBar->setContentsMargins(12, 8, 12, 8);
+    m_headerLabel = new QLabel;
+    auto& s = SessionManager::instance();
+    m_headerLabel->setText(QString("👤 %1（%2）").arg(s.empName(), s.roleName()));
+    m_headerLabel->setStyleSheet("font-size: 14px;");
+    topBar->addWidget(m_headerLabel);
+    topBar->addStretch();
+    auto* logoutBtn = new QPushButton("退出登录");
+    logoutBtn->setStyleSheet(
+        "QPushButton { color: #ff4d4f; border: 1px solid #ff4d4f; padding: 4px 12px; border-radius: 3px; }"
+        "QPushButton:hover { background: #fff1f0; }");
+    topBar->addWidget(logoutBtn);
+    root->addLayout(topBar);
+
+    // 下方：左侧导航 + 右侧页面
+    auto* body = new QHBoxLayout;
+    body->setContentsMargins(0, 0, 0, 0);
 
     // 左侧导航
     m_navList = new QListWidget;
@@ -45,7 +66,7 @@ void CashierSalesWindow::setupUI()
         "QListWidget { border: none; background: #f5f5f5; font-size: 14px; }"
         "QListWidget::item { padding: 12px 8px; }"
         "QListWidget::item:selected { background: #1890ff; color: white; }");
-    root->addWidget(m_navList);
+    body->addWidget(m_navList);
 
     // 右侧页面栈
     m_stack = new QStackedWidget;
@@ -70,9 +91,11 @@ void CashierSalesWindow::setupUI()
     setupQueryMemberPage(queryPage);
     m_stack->addWidget(queryPage);  // 4
 
-    root->addWidget(m_stack, 1);
+    body->addWidget(m_stack, 1);
+    root->addLayout(body, 1);
 
     connect(m_navList, &QListWidget::currentRowChanged, this, &CashierSalesWindow::onNavChanged);
+    connect(logoutBtn, &QPushButton::clicked, this, &CashierSalesWindow::onLogout);
 }
 
 // ────────────────────────────────────────────
@@ -81,6 +104,14 @@ void CashierSalesWindow::setupUI()
 void CashierSalesWindow::onNavChanged(int row)
 {
     m_stack->setCurrentIndex(row);
+}
+
+void CashierSalesWindow::onLogout()
+{
+    SessionManager::instance().logout();
+    auto* login = new LoginWindow;
+    login->show();
+    this->close();
 }
 
 // ────────────────────────────────────────────
@@ -113,7 +144,12 @@ void CashierSalesWindow::setupSellPage(QWidget* page)
     m_searchResultTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_searchResultTable->horizontalHeader()->setStretchLastSection(true);
     m_searchResultTable->setMaximumHeight(180);
-    root->addWidget(m_searchResultTable);
+    //购物数量
+    m_currentQuantitySpinBox = new QSpinBox;
+	auto m_saleLayout = new QHBoxLayout;
+    m_saleLayout->addWidget(m_searchResultTable);
+	m_saleLayout->addWidget(m_currentQuantitySpinBox);
+    root->addLayout(m_saleLayout);
 
     // ── 购物车表格 ──
     auto* cartLabel = new QLabel("🛒 购物车");
@@ -179,6 +215,7 @@ void CashierSalesWindow::setupSellPage(QWidget* page)
     connect(lookupBtn, &QPushButton::clicked, this, &CashierSalesWindow::onLookupMember);
     connect(clearMemberBtn, &QPushButton::clicked, this, &CashierSalesWindow::onClearMember);
     connect(m_checkoutBtn, &QPushButton::clicked, this, &CashierSalesWindow::onCheckout);
+    refreshProductSearch("");
 }
 
 // ────────────────────────────────────────────
@@ -263,7 +300,8 @@ void CashierSalesWindow::onAddToCart()
     for (int r = 0; r < m_cartTable->rowCount(); r++) {
         if (m_cartTable->item(r, 1)->data(Qt::UserRole).toInt() == batchId) {
             int curQty = m_cartTable->item(r, 3)->text().toInt();
-            m_cartTable->item(r, 3)->setText(QString::number(curQty + 1));
+            m_cartTable->item(r, 3)->setText(QString::number(curQty+m_currentQuantitySpinBox->value()));
+            m_currentQuantitySpinBox->setValue(0);
             recalcTotal();
             return;
         }
@@ -285,9 +323,10 @@ void CashierSalesWindow::onAddToCart()
     m_cartTable->setItem(row, 1, batchItem);
 
     m_cartTable->setItem(row, 2, new QTableWidgetItem(QString("¥%1").arg(price, 0, 'f', 2)));
-    m_cartTable->setItem(row, 3, new QTableWidgetItem("1"));
+    m_cartTable->setItem(row, 3, new QTableWidgetItem(QString::number(m_currentQuantitySpinBox->value())));
     m_cartTable->setItem(row, 4, new QTableWidgetItem(QString("¥%1").arg(price, 0, 'f', 2)));
-
+    //购物数量归零
+    m_currentQuantitySpinBox->setValue(0);
     recalcTotal();
 }
 
@@ -607,6 +646,11 @@ void CashierSalesWindow::onShiftHandover()
         m_shiftStatus->setText("未找到该员工");
         return;
     }
+    if (q.value(0) == sess.empId()) {
+        m_shiftStatus->setStyleSheet("color: red;");
+        m_shiftStatus->setText("不能交接自己");
+        return;
+    }
     if (q.value(2).toInt() == 0) {
         m_shiftStatus->setStyleSheet("color: red;");
         m_shiftStatus->setText("该员工已离职");
@@ -726,6 +770,11 @@ void CashierSalesWindow::setupTopUpPage(QWidget* page)
 
 void CashierSalesWindow::onTopUp()
 {
+    if (m_topUpAmount->text().size()>100) {
+        m_topUpStatus->setStyleSheet("color: red;");
+        m_topUpStatus->setText("金额太多");
+        return;
+    }
     QString phone = m_topUpPhone->text().trimmed();
     double amount = m_topUpAmount->text().toDouble();
 

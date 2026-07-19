@@ -35,8 +35,8 @@ QString SessionManager::roleName() const
 {
     switch (m_role) {
     case EmployeeRole::Boss:            return QStringLiteral("老板");
-    case EmployeeRole::SalesCashier:    return QStringLiteral("收银员(销售)");
-    case EmployeeRole::InventoryCashier:return QStringLiteral("收银员(库存)");
+    case EmployeeRole::SalesCashier:    return QStringLiteral("员工");
+    case EmployeeRole::InventoryCashier:return QStringLiteral("员工");
     }
     return QStringLiteral("未知");
 }

@@ -7,6 +7,7 @@
 #include <QTableWidget>
 #include <QStackedWidget>
 #include <QListWidget>
+#include <QSpinbox>
 
 // ── 收银员销售界面 (EmpUI) ──
 class CashierSalesWindow : public QWidget
@@ -37,6 +38,8 @@ private slots:
     void onTopUp();
     // 查会员
     void onQueryMember();
+    // 退出登录
+    void onLogout();
 
 private:
     void setupUI();
@@ -57,6 +60,7 @@ private:
     QLineEdit* m_memberPhoneEdit = nullptr;
     QLabel* m_memberInfoLabel = nullptr;
     QPushButton* m_checkoutBtn = nullptr;
+	QSpinBox* m_currentQuantitySpinBox = nullptr;
 
     // 当前会员（0 = 无会员）
     int m_currentMemberId = 0;
@@ -66,6 +70,7 @@ private:
     // ── 导航 ──
     QListWidget* m_navList = nullptr;
     QStackedWidget* m_stack = nullptr;
+    QLabel* m_headerLabel = nullptr;
 
     // ── 交接 ──
     QLineEdit* m_shiftEmpPhone = nullptr;

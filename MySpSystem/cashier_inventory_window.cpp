@@ -11,6 +11,8 @@
 #include <QDate>
 #include <QDateTime>
 
+#include "login_window.h"
+
 // ────────────────────────────────────────────
 CashierInventoryWindow::CashierInventoryWindow(QWidget* parent) : QWidget(parent)
 {
@@ -22,8 +24,29 @@ CashierInventoryWindow::CashierInventoryWindow(QWidget* parent) : QWidget(parent
 
 void CashierInventoryWindow::setupUI()
 {
-    auto* root = new QHBoxLayout(this);
+    auto* root = new QVBoxLayout(this);
     root->setContentsMargins(0, 0, 0, 0);
+    root->setSpacing(0);
+
+    // 顶部栏
+    auto* topBar = new QHBoxLayout;
+    topBar->setContentsMargins(12, 8, 12, 8);
+    m_headerLabel = new QLabel;
+    auto& s = SessionManager::instance();
+    m_headerLabel->setText(QString("👤 %1（%2）").arg(s.empName(), s.roleName()));
+    m_headerLabel->setStyleSheet("font-size: 14px;");
+    topBar->addWidget(m_headerLabel);
+    topBar->addStretch();
+    auto* logoutBtn = new QPushButton("退出登录");
+    logoutBtn->setStyleSheet(
+        "QPushButton { color: #ff4d4f; border: 1px solid #ff4d4f; padding: 4px 12px; border-radius: 3px; }"
+        "QPushButton:hover { background: #fff1f0; }");
+    topBar->addWidget(logoutBtn);
+    root->addLayout(topBar);
+
+    // 下方：左侧导航 + 右侧页面
+    auto* body = new QHBoxLayout;
+    body->setContentsMargins(0, 0, 0, 0);
 
     m_navList = new QListWidget;
     m_navList->setFixedWidth(120);
@@ -34,7 +57,7 @@ void CashierInventoryWindow::setupUI()
         "QListWidget { border: none; background: #f5f5f5; font-size: 14px; }"
         "QListWidget::item { padding: 12px 8px; }"
         "QListWidget::item:selected { background: #1890ff; color: white; }");
-    root->addWidget(m_navList);
+    body->addWidget(m_navList);
 
     m_stack = new QStackedWidget;
 
@@ -46,13 +69,23 @@ void CashierInventoryWindow::setupUI()
     setupShiftPage(shiftPage);
     m_stack->addWidget(shiftPage);
 
-    root->addWidget(m_stack, 1);
+    body->addWidget(m_stack, 1);
+    root->addLayout(body, 1);
     connect(m_navList, &QListWidget::currentRowChanged, this, &CashierInventoryWindow::onNavChanged);
+    connect(logoutBtn, &QPushButton::clicked, this, &CashierInventoryWindow::onLogout);
 }
 
 void CashierInventoryWindow::onNavChanged(int row)
 {
     m_stack->setCurrentIndex(row);
+}
+
+void CashierInventoryWindow::onLogout()
+{
+    SessionManager::instance().logout();
+    auto* login = new LoginWindow;
+    login->show();
+    this->close();
 }
 
 // ────────────────────────────────────────────
@@ -275,10 +308,15 @@ void CashierInventoryWindow::onShiftHandover()
     auto& db = DatabaseManager::instance();
     auto& sess = SessionManager::instance();
 
-    QSqlQuery q = db.exec("SELECT id, name, is_active FROM employee WHERE phone = ?", { phone });
+    QSqlQuery q = db.exec("SELECT id, name, is_active , FROM employee WHERE phone = ?", { phone });
     if (!q.next()) {
         m_shiftStatus->setStyleSheet("color: red;");
         m_shiftStatus->setText("未找到该员工");
+        return;
+    }
+    if (q.value(0) == sess.empId()) {
+        m_shiftStatus->setStyleSheet("color: red;");
+        m_shiftStatus->setText("不能交接自己");
         return;
     }
     if (q.value(2).toInt() == 0) {
@@ -286,6 +324,7 @@ void CashierInventoryWindow::onShiftHandover()
         m_shiftStatus->setText("该员工已离职");
         return;
     }
+
 
     int toEmpId = q.value(0).toInt();
     QString toName = q.value(1).toString();
