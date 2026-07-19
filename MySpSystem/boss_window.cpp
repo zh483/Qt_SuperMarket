@@ -801,12 +801,13 @@ void BossWindow::refreshDutyStatus()
 
     QSqlQuery q = db.exec(R"(
         SELECT e.name,
-               CASE e.role WHEN 0 THEN '老板' WHEN 1 THEN '收银员(销售)' ELSE '收银员(库存)' END,
+               CASE e.role WHEN 0 THEN '老板' WHEN 1 THEN '收银员' END,
                s.shift_type,
                sl.shift_time
         FROM schedule s
         JOIN employee e ON s.emp_id = e.id
         LEFT JOIN shift_log sl ON sl.to_emp_id = e.id AND date(sl.shift_time) = ?
+             AND sl.shift_type = s.shift_type
         WHERE s.date = ?
         UNION ALL
         -- 加班（无排班但有打卡）

@@ -121,10 +121,14 @@ void DatabaseManager::createTables()
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             from_emp_id INTEGER DEFAULT 0,
             to_emp_id INTEGER NOT NULL,
+            shift_type TEXT DEFAULT '',
             shift_time TEXT NOT NULL DEFAULT (datetime('now','localtime')),
             FOREIGN KEY (to_emp_id) REFERENCES employee(id)
         )
     )");
+
+    // 兼容旧库：补加 shift_type 列（SQLite 不支持 IF NOT EXISTS，忽略重复列错误）
+    exec("ALTER TABLE shift_log ADD COLUMN shift_type TEXT DEFAULT ''");
 
     exec(R"(
         CREATE TABLE IF NOT EXISTS "order" (

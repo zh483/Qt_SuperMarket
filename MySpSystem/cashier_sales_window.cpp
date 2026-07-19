@@ -10,6 +10,7 @@
 #include <QMessageBox>
 #include <QSqlQuery>
 #include <QDate>
+#include <QTime>
 #include <QTimer>
 
 // ────────────────────────────────────────────
@@ -537,12 +538,23 @@ void CashierSalesWindow::onCheckout()
     onClearMember();
     recalcTotal();
 
-    // 交接打卡（销售后自动打卡）
-    db.exec("INSERT OR IGNORE INTO shift_log (from_emp_id, to_emp_id, shift_time) "
-            "SELECT 0, ?, datetime('now','localtime') "
-            "WHERE NOT EXISTS (SELECT 1 FROM shift_log WHERE to_emp_id = ? "
-            "AND date(shift_time) = date('now','localtime'))",
-            { sess.empId(), sess.empId() });
+    // 交接打卡（销售后自动打卡）—— 根据当前时间判断班次
+    {
+        int hour = QTime::currentTime().hour();
+        QString shiftType;
+        if (hour >= 6 && hour < 12)
+            shiftType = ShiftType::Morning;
+        else if (hour >= 12 && hour < 18)
+            shiftType = ShiftType::Afternoon;
+        else
+            shiftType = ShiftType::Night;
+
+        db.exec("INSERT OR IGNORE INTO shift_log (from_emp_id, to_emp_id, shift_type, shift_time) "
+                "SELECT 0, ?, ?, datetime('now','localtime') "
+                "WHERE NOT EXISTS (SELECT 1 FROM shift_log WHERE to_emp_id = ? "
+                "AND date(shift_time) = date('now','localtime') AND shift_type = ?)",
+                { sess.empId(), shiftType, sess.empId(), shiftType });
+    }
 }
 
 // ────────────────────────────────────────────
