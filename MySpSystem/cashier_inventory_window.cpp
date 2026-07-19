@@ -174,6 +174,7 @@ void CashierInventoryWindow::setupInventoryPage(QWidget* page)
     connect(m_productSearch, &QLineEdit::returnPressed, this, &CashierInventoryWindow::onSearchProduct);
     connect(m_productTable, &QTableWidget::itemSelectionChanged, this, &CashierInventoryWindow::onProductSelected);
     connect(saveBtn, &QPushButton::clicked, this, &CashierInventoryWindow::onSaveBatch);
+    onSearchProduct();
 }
 
 void CashierInventoryWindow::onSearchProduct()
@@ -258,7 +259,7 @@ void CashierInventoryWindow::onSaveBatch()
     m_invStatus->setStyleSheet("color: green; font-weight: bold;");
     m_invStatus->setText(QString("入库成功！批次 %1，数量 %2，进价 ¥%3")
         .arg(batchNo).arg(qty).arg(costPrice, 0, 'f', 2));
-
+    //onSearchProduct();
     // 清空表单（保留商品选择）
     m_batchNo->clear();
     m_costPrice->clear();
