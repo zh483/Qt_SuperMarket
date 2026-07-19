@@ -308,7 +308,7 @@ void CashierInventoryWindow::onShiftHandover()
     auto& db = DatabaseManager::instance();
     auto& sess = SessionManager::instance();
 
-    QSqlQuery q = db.exec("SELECT id, name, is_active , FROM employee WHERE phone = ?", { phone });
+    QSqlQuery q = db.exec("SELECT id, name, is_active  FROM employee WHERE phone = ?", { phone });
     if (!q.next()) {
         m_shiftStatus->setStyleSheet("color: red;");
         m_shiftStatus->setText("未找到该员工");

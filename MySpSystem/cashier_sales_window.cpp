@@ -279,14 +279,14 @@ void CashierSalesWindow::onAddToCart()
     }
 
     int productId = m_searchResultTable->item(selRow, 0)->text().toInt();
-
+ 
     // 检查库存
     auto& db = DatabaseManager::instance();
     auto batchQ = db.exec(
         "SELECT id, batch_no, remain_qty, expiry_date FROM batch "
-        "WHERE product_id = ? AND remain_qty > 0 AND expiry_date > date('now','localtime') "
+        "WHERE product_id = ? AND remain_qty >= ? AND remain_qty > 0 AND expiry_date > date('now','localtime') "
         "ORDER BY expiry_date ASC LIMIT 1",
-        { productId });
+        { productId,m_currentQuantitySpinBox->value() });
 
     if (!batchQ.next()) {
         QMessageBox::warning(this, "库存不足", "该商品暂无可用库存或已过期！");
@@ -576,7 +576,9 @@ void CashierSalesWindow::onCheckout()
     m_cartTable->setRowCount(0);
     onClearMember();
     recalcTotal();
+    //库存减少 页面刷新
 
+    refreshProductSearch("");
     // 交接打卡（销售后自动打卡）—— 根据当前时间判断班次
     {
         int hour = QTime::currentTime().hour();

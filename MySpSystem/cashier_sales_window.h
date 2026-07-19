@@ -7,7 +7,7 @@
 #include <QTableWidget>
 #include <QStackedWidget>
 #include <QListWidget>
-#include <QSpinbox>
+#include <QSpinBox>
 
 // ── 收银员销售界面 (EmpUI) ──
 class CashierSalesWindow : public QWidget
